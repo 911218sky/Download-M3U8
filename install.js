@@ -1,13 +1,5 @@
 const { execSync } = require('child_process');
 
-// Check if Node.js is installed
-try {
-  execSync('node -v', { stdio: 'ignore' });
-} catch (error) {
-  console.error('Node.js is not installed. Please install Node.js first.');
-  process.exit(1);
-}
-
 // Check if TypeScript is installed
 try {
   execSync('tsc -v', { stdio: 'ignore' });
