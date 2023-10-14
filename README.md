@@ -16,11 +16,24 @@ node -v
 
 This will display your Node.js version number.
 
+## Installing FFmpeg
+
+To use our project, you also need to have FFmpeg installed on your system. Follow these steps to download and set up FFmpeg:
+
+1. Download FFmpeg from this [link](https://github.com/911218sky/DownloadUtensil/releases/download/v1.1/ffmpeg-release-full.7z).
+
+2. Once the download is complete, extract the contents of the downloaded file.
+
+3. Locate the "bin" folder within the extracted contents.
+
+4. Add the path to the "bin" folder to your system's environment variables. This step allows you to access FFmpeg from any location in your command prompt or terminal.
+
 ## Installing Our Project
 
-After ensuring that Node.js is installed, you can proceed to install our project. We provide a simple `install.bat` script to assist you in the installation process. Follow these steps to execute the installation:
+After ensuring that Node.js and FFmpeg are properly installed, you can proceed to install our project. We provide a simple `install.bat` script to assist you in the installation process. Follow these steps to execute the installation:
 
 1. Open your terminal or command prompt.
+
 2. Navigate to the directory where our project is located. For example:
 
 ```bash
@@ -33,3 +46,4 @@ cd /path/to/your/project
 install.bat
 ```
 
+Now, you have successfully set up Node.js, FFmpeg, and our project. You are ready to use DownloadUtensil with FFmpeg capabilities.
