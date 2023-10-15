@@ -8,17 +8,17 @@ import {
   mergeAndTranscodeVideos,
   streamToBuffer,
   deleteFolderRecursive,
-} from "./utensil";
+} from "../helpers/utils";
 
 import type { Readable } from "stream";
 
-interface GetM3u8Response<HasKey extends boolean = true> {
+export interface GetM3u8Response<HasKey extends boolean = true> {
   ts: string[];
   keyUrl: HasKey extends true ? string : undefined;
 }
 
-interface DownloadsConfig {
-  dir?: string;
+export interface DownloadsConfig {
+  dir: string;
   limit?: number;
   deleteTemporaryFiles?: boolean;
   hasKey?: boolean;
@@ -26,6 +26,7 @@ interface DownloadsConfig {
 }
 
 const defaultDownloadOptions: DownloadsConfig = {
+  dir: "video",
   limit: 1,
   deleteTemporaryFiles: true,
 };
@@ -53,7 +54,7 @@ export async function startDownload(
   url: string,
   axiosOptions: AxiosRequestConfig,
   fileName: string,
-  downloadOptions_: DownloadsConfig = {}
+  downloadOptions_: Partial<DownloadsConfig>
 ): Promise<void> {
   const downloadOptions: DownloadsConfig = {
     ...defaultDownloadOptions,
@@ -79,10 +80,7 @@ export async function startDownload(
     key,
   });
 
-  await mergeAndTranscodeVideos(
-    downloadOptions.dir ?? __dirname,
-    `${fileName}.mp4`
-  );
+  await mergeAndTranscodeVideos(downloadOptions.dir, `${fileName}.mp4`);
 
   if (downloadOptions.dir && downloadOptions.deleteTemporaryFiles) {
     deleteFolderRecursive(downloadOptions.dir);
@@ -167,7 +165,7 @@ async function getKey(
 async function downloads(
   urls: string[],
   axiosOptions: AxiosRequestConfig,
-  downloadOptions_: DownloadsConfig = {}
+  downloadOptions_: Partial<DownloadsConfig> = {}
 ) {
   const downloadOptions: DownloadsConfig = {
     ...defaultDownloadsOptions,

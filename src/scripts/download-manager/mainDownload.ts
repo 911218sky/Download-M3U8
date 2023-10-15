@@ -1,6 +1,6 @@
 import path from "path";
-import { startDownload } from "./lib/downloadVideoKey";
-import { getJsonData, downloadData, options, JsonData } from "./site";
+import { startDownload } from "../../utils/core/download";
+import { getJsonData, options } from "../../site";
 
 // async function main() {
 //   for (const { url, name } of downloadData) {
@@ -18,7 +18,7 @@ async function main() {
     !readJsonData.limit || readJsonData.limit <= 0 ? 50 : readJsonData.limit;
   for (const { url, name } of readJsonData.downloadData) {
     await startDownload(url, options, name || "", {
-      dir: path.join(__dirname, `${name}`),
+      dir: path.resolve(__dirname, "..", "..", "..", name ?? "video"),
       hasKey: readJsonData.hasKey,
       limit,
     });

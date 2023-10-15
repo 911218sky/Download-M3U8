@@ -22,12 +22,14 @@ interface GetM3u8Config {
   videoQuality?: keyof VideoQuality;
 }
 
+const device = "0138c650f9984ae26fe0f5bf2ae7c483d1ec93b3d1583b33652be6e04963";
+
 const options: AxiosRequestConfig = {
   headers: {
     Origin: "https://ani.gamer.com.tw",
     Referer: "https://ani.gamer.com.tw/animeVideo.php?sn=35487",
     Cookie:
-      "ckM=1995686074; __gads=ID=4e418def0066473f:T=1690810559:RT=1691586512:S=ALNI_MbOHvNKZJjFbOu35dA7_CNXNZT_rA; __gpi=UID=00000c25b2ac0419:T=1690810559:RT=1691586512:S=ALNI_MY_iOiE8zFFCzToBu8-6Uc_HbhpPA; nologinuser=0385cb604ea883b2f3eccccfa820175c3111dfa4321acd23651e93a34316; buap_puoo=p101; BAHAID=a3414061; BAHAHASHID=e7be811b82460e13152e2e09f87509326c1ffc86671e438efdab3c895b1d1b01; BAHANICK=a3414061; BAHALV=13; BAHAFLT=1534333857; MB_BAHAID=a3414061; MB_BAHANICK=a3414061; age_limit_content=1; ga_class1=D; _ga_2Q21791Y9D=GS1.1.1696502696.4.1.1696502710.46.0.0; BAHAENUR=99bb1d03e161e1c95dcf975ca85d4f8b; BAHARUNE=eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJ1c2VyaWQiOiJhMzQxNDA2MSIsInVzZXJuYW1lIjoiYTM0MTQwNjEiLCJtb2JpbGVWZXJpZnkiOnRydWUsImRlbnlQb3N0IjpmYWxzZSwiYXZhdGFyTGV2ZWwiOjEzLCJtaWQiOjE5OTU2ODYwNzQsIm5vbmNlIjoxNzgwMzk0Mzg0LCJqaWQiOiJhMzQxNDA2MUBsaXRlLmdhbWVyLmNvbS50dyIsImV4cCI6MTY5ODQ0MDQwMH0.RP-tiS8oK0gwe9EcsTIgTXiuWSbFH9Wpz1pipqTFetBln01Qwbg5B26WQi7TEQCS1uyXjALUS1JdvjOB_paUjw; MB_BAHARUNE=eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJ1c2VyaWQiOiJhMzQxNDA2MSIsInVzZXJuYW1lIjoiYTM0MTQwNjEiLCJtb2JpbGVWZXJpZnkiOnRydWUsImRlbnlQb3N0IjpmYWxzZSwiYXZhdGFyTGV2ZWwiOjEzLCJtaWQiOjE5OTU2ODYwNzQsIm5vbmNlIjoxNzgwMzk0Mzg0LCJqaWQiOiJhMzQxNDA2MUBsaXRlLmdhbWVyLmNvbS50dyIsImV4cCI6MTY5ODQ0MDQwMH0.RP-tiS8oK0gwe9EcsTIgTXiuWSbFH9Wpz1pipqTFetBln01Qwbg5B26WQi7TEQCS1uyXjALUS1JdvjOB_paUjw; avtrv=1697184640155; _gid=GA1.3.1716247149.1697184640; __cf_bm=Q9OorZ1ncSQGrm452uPew38lXIwJpJp8MgpW1LhXfn0-1697208796-0-AXIKn++Gc2np0JSPnEDiePBWcfjPvEOw1HyFv5TjqWmo1YGW17sybCKphTTMaTTNOmldjNOvYh1O2WDKogM/4dc=; _ga=GA1.1.657848791.1689908706; _ga_MT7EZECMKQ=GS1.1.1697208796.77.1.1697208797.59.0.0; ANIME_SIGN=000554745af94dc6baf0587fa602b6051ea46b59fe581824652959de; buap_modr=p005; ckBahaAd=-------05----------------",
+      "ckM=1995686074; __gads=ID=4e418def0066473f:T=1690810559:RT=1691586512:S=ALNI_MbOHvNKZJjFbOu35dA7_CNXNZT_rA; __gpi=UID=00000c25b2ac0419:T=1690810559:RT=1691586512:S=ALNI_MY_iOiE8zFFCzToBu8-6Uc_HbhpPA; nologinuser=0385cb604ea883b2f3eccccfa820175c3111dfa4321acd23651e93a34316; buap_puoo=p101; BAHAID=a3414061; BAHAHASHID=e7be811b82460e13152e2e09f87509326c1ffc86671e438efdab3c895b1d1b01; BAHANICK=a3414061; BAHALV=13; BAHAFLT=1534333857; MB_BAHAID=a3414061; MB_BAHANICK=a3414061; age_limit_content=1; ga_class1=D; _ga_2Q21791Y9D=GS1.1.1696502696.4.1.1696502710.46.0.0; _gid=GA1.3.1926983055.1697300411; BAHAENUR=e392c11f3255957b44dacc3fdc6d29bf; BAHARUNE=eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJ1c2VyaWQiOiJhMzQxNDA2MSIsInVzZXJuYW1lIjoiYTM0MTQwNjEiLCJtb2JpbGVWZXJpZnkiOnRydWUsImRlbnlQb3N0IjpmYWxzZSwiYXZhdGFyTGV2ZWwiOjEzLCJtaWQiOjE5OTU2ODYwNzQsIm5vbmNlIjoxOTc2NDUxNTY5LCJqaWQiOiJhMzQxNDA2MUBsaXRlLmdhbWVyLmNvbS50dyIsImV4cCI6MTY5ODYxMzIwMH0.hYo3xxA1JWf1sDVCKO6m1OAqUOPS-fihCX8P0uOd5ZIT1BUsBAhByvW3GaUFnagihqgvlenTu1eiMyD3MJkX8A; MB_BAHARUNE=eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJ1c2VyaWQiOiJhMzQxNDA2MSIsInVzZXJuYW1lIjoiYTM0MTQwNjEiLCJtb2JpbGVWZXJpZnkiOnRydWUsImRlbnlQb3N0IjpmYWxzZSwiYXZhdGFyTGV2ZWwiOjEzLCJtaWQiOjE5OTU2ODYwNzQsIm5vbmNlIjoxOTc2NDUxNTY5LCJqaWQiOiJhMzQxNDA2MUBsaXRlLmdhbWVyLmNvbS50dyIsImV4cCI6MTY5ODYxMzIwMH0.hYo3xxA1JWf1sDVCKO6m1OAqUOPS-fihCX8P0uOd5ZIT1BUsBAhByvW3GaUFnagihqgvlenTu1eiMyD3MJkX8A; avtrv=1697351031231; ANIME_SIGN=0138b96c0946ef73aac1bb4be852ed4874b6f2bec811fedb652be6e0; buap_modr=p005; __cf_bm=Me9lv7KLrpD94dpRZ1XKj2wUHLwigsjy3TXLT3BJLqg-1697377793-0-AZmVQiBJx9ZJkSCpdjeDKC18g4KNCQXXuvZJH8e6EsTcFXfwvsOj4eC/Ghrdd26SVf2Kkf30M+A9Ccu4gxHZ2Xo=; _gat=1; _ga_MT7EZECMKQ=GS1.1.1697378223.83.1.1697378224.59.0.0; _ga=GA1.1.657848791.1689908706; ckBahaAd=-------29----------------",
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
   },
@@ -65,9 +67,7 @@ export async function getTitle(videoUrl: string): Promise<string> {
   }
 }
 
-export async function getPlaylistAdvance(
-  ajaxUrl: string
-): Promise<VideoQuality> {
+async function getPlaylistAdvance(ajaxUrl: string): Promise<VideoQuality> {
   const response = await axios.get(ajaxUrl, options);
 
   if (response.status !== 200) {
@@ -102,7 +102,7 @@ export async function getM3u8(
   }
 
   const response = await axios.get(
-    `https://ani.gamer.com.tw/ajax/m3u8.php?sn=${sn}&device=000560909c37856ee166fc22dc1d8ecfb4bbc62277f93a75652959de5122`,
+    `https://ani.gamer.com.tw/ajax/m3u8.php?sn=${sn}&device=${device}`,
     options
   );
 

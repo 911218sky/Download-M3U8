@@ -26,6 +26,3 @@ try {
   console.error('npm install command failed.');
   process.exit(1);
 }
-
-// Execute other initialization steps
-// You can add any other necessary initialization steps here

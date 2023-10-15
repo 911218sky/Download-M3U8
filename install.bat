@@ -1,2 +1,2 @@
 @echo off
-node ./install.js
+node ./src/scripts/install.js
