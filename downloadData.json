@@ -1,6 +1,9 @@
-[
-  {
-    "url": "",
-    "name": ""
-  }
-]
+{
+  "hasKey": true,
+  "downloadData": [
+    {
+      "url": "",
+      "name": ""
+    }
+  ]
+}
