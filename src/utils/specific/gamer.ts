@@ -1,26 +1,8 @@
-import axios, { AxiosRequestConfig } from "axios";
+import axios from "axios";
 import { URL } from "url";
 
-interface M3u8Response {
-  src?: string;
-  error?: {
-    code: number;
-    message: string;
-    state: string;
-    details: string[];
-  };
-}
-
-interface VideoQuality {
-  "360p": string | null;
-  "540p": string | null;
-  "720p": string | null;
-  "1080p": string | null;
-}
-
-interface GetM3u8Config {
-  videoQuality?: keyof VideoQuality;
-}
+import type { AxiosRequestConfig } from "axios";
+import type { GetM3u8Config, M3u8Response, VideoQuality } from "./types";
 
 const device = "0138c650f9984ae26fe0f5bf2ae7c483d1ec93b3d1583b33652be6e04963";
 

@@ -1,7 +1,7 @@
 import path from "path";
-import { startDownload } from "../../utils/core/download";
-import { options } from "../../site";
-import { getAllVideoUrl, getTitle, getM3u8 } from "../../utils/specific/gamer";
+import { startDownload } from "@utils/core/download";
+import { getAllVideoUrl, getTitle, getM3u8 } from "@utils/specific/gamer";
+import { options } from "@site/index";
 
 interface VideoInfo {
   url: string;

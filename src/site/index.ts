@@ -1,17 +1,8 @@
-import { AxiosRequestConfig } from "axios";
 import path from "path";
-import { readDownloadData } from "../utils/core/download";
+import { readFile } from "fs/promises";
+import { AxiosRequestConfig } from "axios";
 
-export interface DownloadData {
-  url: string;
-  name: string | undefined;
-}
-
-export interface JsonData {
-  downloadData: DownloadData[];
-  hasKey: boolean;
-  limit: number | null;
-}
+import type { DownloadData, JsonData } from "./types";
 
 export const options: AxiosRequestConfig = {
   headers: {
@@ -26,10 +17,10 @@ export const options: AxiosRequestConfig = {
   },
 };
 
-export function getJsonData(): JsonData {
-  const jsonData = readDownloadData(
-    path.resolve(__dirname, "..", "..", "downloadData.json")
-  );
+export async function getJsonData(): Promise<JsonData> {
+  const filePath = path.resolve(__dirname, "..", "..", "downloadData.json");
+  const data = await readFile(filePath, "utf8");
+  const jsonData = JSON.parse(data);
   if (!isJsonData(jsonData)) {
     throw new Error("jsonData is not equal to DownloadData");
   }
@@ -37,10 +28,7 @@ export function getJsonData(): JsonData {
 }
 
 export function isDownloadData(data: any): data is DownloadData {
-  return (
-    typeof data.url === "string" &&
-    (data.name === undefined || typeof data.name === "string")
-  );
+  return typeof data.url === "string" && (typeof data.name === "string" || data.name === undefined);
 }
 
 export function isJsonData(data: any): data is JsonData {

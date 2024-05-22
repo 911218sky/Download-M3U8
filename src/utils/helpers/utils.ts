@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import ffmpeg from "fluent-ffmpeg";
 
-import { Readable } from "stream";
+import type { Readable } from "stream";
 
 export async function streamToBuffer(stream: Readable): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {

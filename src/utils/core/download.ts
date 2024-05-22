@@ -1,33 +1,23 @@
 import fs from "fs";
-import axios, { AxiosRequestConfig } from "axios";
+import axios from "axios";
 import crypto from "crypto";
 import Bottleneck from "bottleneck";
-import progress from "progress";
+import cliProgress from "cli-progress";
+
 import {
   createDirectory,
   mergeAndTranscodeVideos,
   streamToBuffer,
   deleteFolderRecursive,
-} from "../helpers/utils";
+} from "@utils/helpers/utils";
 
+import type { AxiosInstance, AxiosRequestConfig } from "axios";
 import type { Readable } from "stream";
-
-export interface GetM3u8Response<HasKey extends boolean = true> {
-  ts: string[];
-  keyUrl: HasKey extends true ? string : undefined;
-}
-
-export interface DownloadsConfig {
-  dir: string;
-  limit?: number;
-  deleteTemporaryFiles?: boolean;
-  hasKey?: boolean;
-  key?: Buffer | undefined;
-}
+import type { DownloadsConfig, GetM3u8Response } from "./types";
 
 const defaultDownloadOptions: DownloadsConfig = {
   dir: "video",
-  limit: 1,
+  limit: 5,
   deleteTemporaryFiles: true,
 };
 
@@ -35,20 +25,6 @@ const defaultDownloadsOptions: DownloadsConfig = {
   ...defaultDownloadOptions,
   hasKey: false,
 };
-
-export function readDownloadData(filePath: string) {
-  try {
-    const data = fs.readFileSync(filePath, "utf8");
-    return JSON.parse(data);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`Error reading downloadData.json: ${error.message}`);
-    } else {
-      console.error("An error occurred");
-    }
-    return [];
-  }
-}
 
 export async function startDownload(
   url: string,
@@ -89,10 +65,10 @@ export async function startDownload(
 
 async function fetchData(
   url: string,
-  axiosOptions: AxiosRequestConfig
+  axiosInstance: AxiosInstance
 ): Promise<any> {
   try {
-    const response = await axios.get(url, axiosOptions);
+    const response = await axiosInstance.get(url);
     if (response.status !== 200) {
       throw new Error(`HTTPError: HTTP error while getting data from ${url}`);
     }
@@ -114,7 +90,8 @@ async function getM3u8<HasKey extends boolean = true>(
   axiosOptions: AxiosRequestConfig,
   hasKey: HasKey
 ): Promise<GetM3u8Response<HasKey>> {
-  const data = (await fetchData(url, axiosOptions)) as string;
+  const axiosInstance = axios.create(axiosOptions);
+  const data = (await fetchData(url, axiosInstance)) as string;
   const head = url.substring(0, url.lastIndexOf("/"));
   const ts = data.match(/(https:\/\/)?[^ \n]+\.ts/g);
   if (!ts) {
@@ -149,10 +126,11 @@ async function getKey(
   url: string,
   axiosOptions: AxiosRequestConfig
 ): Promise<Buffer> {
-  const response = await axios.get(url, {
+  const axiosInstance = axios.create({
     ...axiosOptions,
     responseType: "stream",
   });
+  const response = await axiosInstance.get(url);
   const dataStream = response.data as Readable;
   const key = await streamToBuffer(dataStream);
   if (key.length === 0) {
@@ -171,10 +149,11 @@ async function downloads(
     ...defaultDownloadsOptions,
     ...downloadOptions_,
   };
-  const progressBar = new progress(`Downloading [:bar] :percent :etas`, {
-    width: 40,
-    total: urls.length,
-  });
+  const progressBar = new cliProgress.SingleBar(
+    {},
+    cliProgress.Presets.shades_classic
+  );
+  progressBar.start(urls.length, 0);
 
   const limiter = new Bottleneck({
     maxConcurrent: downloadOptions.limit,
@@ -187,11 +166,11 @@ async function downloads(
         ...downloadOptions,
         key: downloadOptions.key,
       });
-      progressBar.tick();
+      progressBar.increment();
     })
   );
 
-  await Promise.all(promises).finally(() => progressBar.terminate());
+  await Promise.all(promises).finally(() => progressBar.stop());
 }
 
 async function download(
@@ -205,12 +184,12 @@ async function download(
     ...downloadOptions_,
   };
   try {
-    const file = fs.createWriteStream(filePath);
-    const response = (await fetchData(url, {
-      responseType: "stream",
+    const axiosInstance = axios.create({
       ...axiosOptions,
-    })) as Readable;
-
+      responseType: "stream",
+    });
+    const response = await axiosInstance.get(url);
+    const file = fs.createWriteStream(filePath);
     const { hasKey, key } = downloadOptions;
 
     let transformStream: crypto.Decipher | undefined;
@@ -223,8 +202,8 @@ async function download(
       );
     }
     const outputStream = transformStream
-      ? response.pipe(transformStream)
-      : response;
+      ? response.data.pipe(transformStream)
+      : response.data;
     outputStream.pipe(file);
 
     await new Promise((resolve, reject) => {
