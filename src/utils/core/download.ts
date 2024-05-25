@@ -1,65 +1,53 @@
 import fs from "fs";
+import path from "path";
 import axios from "axios";
 import crypto from "crypto";
 import Bottleneck from "bottleneck";
 import cliProgress from "cli-progress";
 
 import {
-  createDirectory,
   mergeAndTranscodeVideos,
   streamToBuffer,
   deleteFolderRecursive,
+  createDirectoryRecursively,
 } from "@utils/helpers/utils";
 
 import type { AxiosInstance, AxiosRequestConfig } from "axios";
 import type { Readable } from "stream";
 import type { DownloadsConfig, GetM3u8Response } from "./types";
 
-const defaultDownloadOptions: DownloadsConfig = {
-  dir: "video",
-  limit: 5,
-  deleteTemporaryFiles: true,
-};
-
-const defaultDownloadsOptions: DownloadsConfig = {
-  ...defaultDownloadOptions,
-  hasKey: false,
-};
-
 export async function startDownload(
   url: string,
   axiosOptions: AxiosRequestConfig,
   fileName: string,
-  downloadOptions_: Partial<DownloadsConfig>
+  downloadOptions: DownloadsConfig
 ): Promise<void> {
-  const downloadOptions: DownloadsConfig = {
-    ...defaultDownloadOptions,
-    ...downloadOptions_,
-  };
-  if (downloadOptions.dir) {
-    createDirectory(downloadOptions.dir);
-  }
+  let {
+    rootDownloadPath,
+    deleteTemporaryFiles,
+    hasKey = false,
+    key,
+  } = downloadOptions;
 
-  const { ts, keyUrl } = await getM3u8(
-    url,
-    axiosOptions,
-    downloadOptions.hasKey!
-  );
+  const folderPath = path.join(rootDownloadPath, fileName);
+  createDirectoryRecursively(folderPath);
 
-  let key: Buffer | undefined = undefined;
-  if (downloadOptions.hasKey! && keyUrl) {
+  const { ts, keyUrl } = await getM3u8(url, axiosOptions, hasKey);
+
+  if (hasKey && keyUrl) {
     key = await getKey(keyUrl, axiosOptions);
   }
 
   await downloads(ts, axiosOptions, {
     ...downloadOptions,
+    rootDownloadPath: folderPath,
     key,
   });
 
-  await mergeAndTranscodeVideos(downloadOptions.dir, `${fileName}.mp4`);
+  await mergeAndTranscodeVideos(folderPath, `${fileName}.mp4`);
 
-  if (downloadOptions.dir && downloadOptions.deleteTemporaryFiles) {
-    deleteFolderRecursive(downloadOptions.dir);
+  if (deleteTemporaryFiles) {
+    deleteFolderRecursive(folderPath);
   }
 }
 
@@ -107,7 +95,6 @@ async function getM3u8<HasKey extends boolean = true>(
   }
 
   ts.splice(0, 1);
-
   if (ts && !ts[0].includes("https")) {
     ts.forEach((v, i, arr) => {
       arr[i] = `${head}/${v}`;
@@ -143,12 +130,9 @@ async function getKey(
 async function downloads(
   urls: string[],
   axiosOptions: AxiosRequestConfig,
-  downloadOptions_: Partial<DownloadsConfig> = {}
+  downloadOptions: DownloadsConfig
 ) {
-  const downloadOptions: DownloadsConfig = {
-    ...defaultDownloadsOptions,
-    ...downloadOptions_,
-  };
+  const { limit, rootDownloadPath } = downloadOptions;
   const progressBar = new cliProgress.SingleBar(
     {},
     cliProgress.Presets.shades_classic
@@ -156,15 +140,14 @@ async function downloads(
   progressBar.start(urls.length, 0);
 
   const limiter = new Bottleneck({
-    maxConcurrent: downloadOptions.limit,
+    maxConcurrent: limit,
   });
 
   const promises = urls.map((url, currentIndex) =>
     limiter.schedule(async () => {
-      const filePath = `${downloadOptions.dir ?? "."}/${currentIndex}.ts`;
+      const filePath = path.join(rootDownloadPath, `${currentIndex}.ts`);
       await download(url, axiosOptions, filePath, {
         ...downloadOptions,
-        key: downloadOptions.key,
       });
       progressBar.increment();
     })
@@ -177,20 +160,16 @@ async function download(
   url: string,
   axiosOptions: AxiosRequestConfig,
   filePath: string,
-  downloadOptions_: DownloadsConfig
+  downloadOptions: DownloadsConfig
 ): Promise<void> {
-  const downloadOptions: DownloadsConfig = {
-    ...defaultDownloadsOptions,
-    ...downloadOptions_,
-  };
   try {
+    const { hasKey, key } = downloadOptions;
     const axiosInstance = axios.create({
       ...axiosOptions,
       responseType: "stream",
     });
     const response = await axiosInstance.get(url);
     const file = fs.createWriteStream(filePath);
-    const { hasKey, key } = downloadOptions;
 
     let transformStream: crypto.Decipher | undefined;
 

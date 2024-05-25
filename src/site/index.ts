@@ -28,14 +28,18 @@ export async function getJsonData(): Promise<JsonData> {
 }
 
 export function isDownloadData(data: any): data is DownloadData {
-  return typeof data.url === "string" && (typeof data.name === "string" || data.name === undefined);
+  return (
+    typeof data.url === "string" &&
+    (typeof data.name === "string" || data.name === undefined)
+  );
 }
 
 export function isJsonData(data: any): data is JsonData {
   if (
     Array.isArray(data.downloadData) &&
     typeof data.hasKey === "boolean" &&
-    (data.limit === null || typeof data.limit === "number")
+    (data.limit === null || typeof data.limit === "number") &&
+    typeof data.rootDownloadPath === "string"
   ) {
     for (const item of data.downloadData) {
       if (!isDownloadData(item)) return false;

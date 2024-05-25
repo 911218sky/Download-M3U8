@@ -4,7 +4,7 @@ export interface GetM3u8Response<HasKey extends boolean = true> {
 }
 
 export interface DownloadsConfig {
-  dir: string;
+  rootDownloadPath: string;
   limit?: number;
   deleteTemporaryFiles?: boolean;
   hasKey?: boolean;

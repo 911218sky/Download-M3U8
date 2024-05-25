@@ -7,4 +7,5 @@ export interface JsonData {
   downloadData: DownloadData[];
   hasKey: boolean;
   limit: number | null;
+  rootDownloadPath: string;
 }

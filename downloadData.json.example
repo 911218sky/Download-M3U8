@@ -1,6 +1,7 @@
 {
   "hasKey": true,
   "limit": 10,
+  "rootDownloadPath": "./video",
   "downloadData": [
     {
       "url": ".m3u8",

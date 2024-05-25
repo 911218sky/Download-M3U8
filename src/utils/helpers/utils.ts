@@ -34,31 +34,24 @@ export function deleteFolderRecursive(folderPath: string) {
   }
 }
 
-export function createDirectory(directory: string) {
-  if (!fs.existsSync(directory)) {
-    try {
-      fs.mkdirSync(directory, { recursive: true });
-      console.log(`Folder created successfully: ${directory}`);
-    } catch (error) {
-      if (error instanceof Error) {
-        console.log(
-          `An error occurred while creating the folder: ${error.message}`
-        );
-      } else {
-        console.log(
-          `An error occurred while creating the folder: Unknown error`
-        );
-      }
-    }
-  } else {
-    console.log(`The folder already exists: ${directory}`);
+export function createDirectoryRecursively(directoryPath: string): void {
+  if (fs.existsSync(directoryPath)) {
+    console.log(`Directory already exists: ${directoryPath}`);
+    return;
   }
+
+  const parentDirectory = path.dirname(directoryPath);
+  if (!fs.existsSync(parentDirectory)) {
+    createDirectoryRecursively(parentDirectory);
+  }
+
+  fs.mkdirSync(directoryPath);
+  console.log(`Directory created: ${directoryPath}`);
 }
 
 export async function mergeAndTranscodeVideos(
   inputDir: string,
-  fileName: string,
-  ffmpegOptions: string[] = []
+  fileName: string
 ): Promise<void> {
   try {
     const inputFiles = fs
