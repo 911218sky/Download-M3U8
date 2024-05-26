@@ -51,9 +51,16 @@ export function createDirectoryRecursively(directoryPath: string): void {
 
 export async function mergeAndTranscodeVideos(
   inputDir: string,
-  fileName: string
+  outputDir: string,
+  fileName: string,
 ): Promise<void> {
   try {
+    if (!path.isAbsolute(inputDir)) {
+      inputDir = path.resolve(inputDir);
+    }
+    if (!path.isAbsolute(outputDir)) {
+      outputDir = path.resolve(outputDir);
+    }
     const inputFiles = fs
       .readdirSync(inputDir)
       .filter((filename) => filename.endsWith(".ts"))
@@ -89,7 +96,7 @@ export async function mergeAndTranscodeVideos(
           "-bsf:a",
           "aac_adtstoasc",
         ])
-        .output(fileName)
+        .output(path.join(outputDir, `${fileName}.mp4`))
         .on("start", (commandLine) => {
           console.log("ffmpeg command:", commandLine);
         })

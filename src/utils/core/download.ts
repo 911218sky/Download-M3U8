@@ -24,11 +24,10 @@ export async function startDownload(
 ): Promise<void> {
   let {
     rootDownloadPath,
-    deleteTemporaryFiles,
+    deleteTemporaryFiles = true,
     hasKey = false,
     key,
   } = downloadOptions;
-
   const folderPath = path.join(rootDownloadPath, fileName);
   createDirectoryRecursively(folderPath);
 
@@ -44,7 +43,11 @@ export async function startDownload(
     key,
   });
 
-  await mergeAndTranscodeVideos(folderPath, `${fileName}.mp4`);
+  await mergeAndTranscodeVideos(
+    folderPath,
+    rootDownloadPath,
+    `${fileName}.mp4`
+  );
 
   if (deleteTemporaryFiles) {
     deleteFolderRecursive(folderPath);
