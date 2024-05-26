@@ -20,17 +20,20 @@ export async function streamToBuffer(stream: Readable): Promise<Buffer> {
   });
 }
 
-export function deleteFolderRecursive(folderPath: string) {
-  if (fs.existsSync(folderPath)) {
-    fs.readdirSync(folderPath).forEach((file) => {
-      const curPath = path.join(folderPath, file);
-      if (fs.lstatSync(curPath).isDirectory()) {
-        deleteFolderRecursive(curPath);
+export function deleteFolderRecursive(directoryPath: string): void {
+  if (!path.isAbsolute(directoryPath)) {
+    directoryPath = path.resolve(directoryPath);
+  }
+  if (fs.existsSync(directoryPath)) {
+    fs.readdirSync(directoryPath).forEach((file) => {
+      const currentPath = path.join(directoryPath, file);
+      if (fs.lstatSync(currentPath).isDirectory()) {
+        deleteFolderRecursive(currentPath);
       } else {
-        fs.unlinkSync(curPath);
+        fs.unlinkSync(currentPath);
       }
     });
-    fs.rmdirSync(folderPath);
+    fs.rmdirSync(directoryPath);
   }
 }
 
@@ -52,7 +55,7 @@ export function createDirectoryRecursively(directoryPath: string): void {
 export async function mergeAndTranscodeVideos(
   inputDir: string,
   outputDir: string,
-  fileName: string,
+  fileName: string
 ): Promise<void> {
   try {
     if (!path.isAbsolute(inputDir)) {
@@ -96,7 +99,7 @@ export async function mergeAndTranscodeVideos(
           "-bsf:a",
           "aac_adtstoasc",
         ])
-        .output(path.join(outputDir, `${fileName}.mp4`))
+        .output(path.join(outputDir, fileName))
         .on("start", (commandLine) => {
           console.log("ffmpeg command:", commandLine);
         })
