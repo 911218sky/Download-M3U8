@@ -86,7 +86,12 @@ async function getM3u8<HasKey extends boolean = true>(
   const axiosInstance = axios.create(axiosOptions);
   const data = m3u8Path
     ? fs.readFileSync(m3u8Path).toString()
-    : ((await fetchData(url, axiosInstance)) as string);
+    : ((await fetchData(url, axiosInstance)) as string | undefined);
+
+  if (!data) {
+    throw new Error(`HTTPError: No data found in ${url}`);
+  }
+
   const head = url.substring(0, url.lastIndexOf("/"));
   const ts = data.match(/(https:\/\/)?[^ \n]+\.ts[^ \n]*/g);
   if (!ts) {
@@ -171,7 +176,6 @@ async function download(
   retries: number = 3
 ): Promise<void> {
   try {
-    
     if (fs.existsSync(filePath)) return;
     const { hasKey, key } = downloadOptions;
     const axiosInstance = axios.create({
