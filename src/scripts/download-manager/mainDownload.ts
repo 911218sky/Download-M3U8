@@ -1,14 +1,13 @@
-import { resolve } from "path";
-
 import { startDownload } from "@utils/core/download";
-import { getJsonData, options } from "@site/index";
+import { getJsonData } from "@site/index";
 
 async function main() {
   const { rootDownloadPath, limit, downloadData, hasKey } = await getJsonData();
-  for (const { url, name } of downloadData) {
-    await startDownload(url, options, name || "video", {
+  for (const { url, name, m3u8Path } of downloadData) {
+    await startDownload(url, {}, name || "video", {
       rootDownloadPath,
       hasKey,
+      m3u8Path,
       limit: !limit || limit <= 0 ? 10 : limit,
     });
   }

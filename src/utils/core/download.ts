@@ -27,11 +27,12 @@ export async function startDownload(
     deleteTemporaryFiles = true,
     hasKey = false,
     key,
+    m3u8Path,
   } = downloadOptions;
   const folderPath = path.join(rootDownloadPath, fileName);
   createDirectoryRecursively(folderPath);
 
-  const { ts, keyUrl } = await getM3u8(url, axiosOptions, hasKey);
+  const { ts, keyUrl } = await getM3u8(url, axiosOptions, hasKey, m3u8Path);
 
   if (hasKey && keyUrl) {
     key = await getKey(keyUrl, axiosOptions);
@@ -79,12 +80,15 @@ async function fetchData(
 async function getM3u8<HasKey extends boolean = true>(
   url: string,
   axiosOptions: AxiosRequestConfig,
-  hasKey: HasKey
+  hasKey: HasKey,
+  m3u8Path?: string
 ): Promise<GetM3u8Response<HasKey>> {
   const axiosInstance = axios.create(axiosOptions);
-  const data = (await fetchData(url, axiosInstance)) as string;
+  const data = m3u8Path
+    ? fs.readFileSync(m3u8Path).toString()
+    : ((await fetchData(url, axiosInstance)) as string);
   const head = url.substring(0, url.lastIndexOf("/"));
-  const ts = data.match(/(https:\/\/)?[^ \n]+\.ts/g);
+  const ts = data.match(/(https:\/\/)?[^ \n]+\.ts[^ \n]*/g);
   if (!ts) {
     throw new Error(`HTTPError: No valid .ts file found in ${url}`);
   }
@@ -163,13 +167,15 @@ async function download(
   url: string,
   axiosOptions: AxiosRequestConfig,
   filePath: string,
-  downloadOptions: DownloadsConfig
+  downloadOptions: DownloadsConfig,
+  retries: number = 3
 ): Promise<void> {
   try {
     const { hasKey, key } = downloadOptions;
     const axiosInstance = axios.create({
       ...axiosOptions,
       responseType: "stream",
+      timeout: 1000 * 5,
     });
     const response = await axiosInstance.get(url);
     const file = fs.createWriteStream(filePath);
@@ -186,6 +192,7 @@ async function download(
     const outputStream = transformStream
       ? response.data.pipe(transformStream)
       : response.data;
+
     outputStream.pipe(file);
 
     await new Promise((resolve, reject) => {
@@ -198,10 +205,15 @@ async function download(
       });
     });
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.log(`Error downloading from ${url}: ${error.message}`);
-    } else {
+    if (!(error instanceof Error)) {
       console.log(`Error downloading from ${url}: Unknown error`);
+      return;
     }
+    if (!error.message.includes("timeout") && retries > 0) {
+      console.log(`Error downloading from ${url}: ${error.message}`);
+      return;
+    }
+    console.log(`Retrying download... (${retries} retries left)`);
+    await download(url, axiosOptions, filePath, downloadOptions, retries - 1);
   }
 }

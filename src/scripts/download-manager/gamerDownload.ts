@@ -23,9 +23,15 @@ async function processVideoInfo(videoInfo: VideoInfo) {
     videoQuality: "1080p",
   });
   await startDownload(m3u8, options, name || "video", {
-    dir: path.resolve(__dirname, "..", "..", "..", name || "video"),
+    rootDownloadPath: path.resolve(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      name || "video"
+    ),
     hasKey: true,
-    limit: 50,
+    limit: 25,
   });
 }
 
