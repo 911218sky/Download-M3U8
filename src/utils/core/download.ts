@@ -171,12 +171,15 @@ async function download(
   retries: number = 3
 ): Promise<void> {
   try {
+    
+    if (fs.existsSync(filePath)) return;
     const { hasKey, key } = downloadOptions;
     const axiosInstance = axios.create({
       ...axiosOptions,
       responseType: "stream",
       timeout: 1000 * 5,
     });
+
     const response = await axiosInstance.get(url);
     const file = fs.createWriteStream(filePath);
 
