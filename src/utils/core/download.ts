@@ -158,6 +158,10 @@ async function downloads(
   const promises = urls.map((url, currentIndex) =>
     limiter.schedule(async () => {
       const filePath = path.join(rootDownloadPath, `${currentIndex}.ts`);
+      if (fs.existsSync(filePath)) {
+        progressBar.increment();
+        return;
+      }
       await download(url, axiosOptions, filePath, {
         ...downloadOptions,
       });
