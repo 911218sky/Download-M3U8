@@ -19,10 +19,12 @@ const videoInfoArray: VideoInfo[] = [
 async function processVideoInfo(videoInfo: VideoInfo) {
   let { url, name } = videoInfo;
   if (!name) name = await getTitle(url);
-  const m3u8 = await getM3u8(url, {
+  const m3u8Url = await getM3u8(url, {
     videoQuality: "1080p",
   });
-  await startDownload(m3u8, options, name || "video", {
+  await startDownload({
+    url: m3u8Url,
+    name: name || "video",
     rootDownloadPath: path.resolve(
       __dirname,
       "..",
@@ -30,8 +32,8 @@ async function processVideoInfo(videoInfo: VideoInfo) {
       "..",
       name || "video"
     ),
-    hasKey: true,
     limit: 25,
+    axiosOptions: options,
   });
 }
 

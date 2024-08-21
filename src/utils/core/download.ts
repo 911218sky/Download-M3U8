@@ -1,7 +1,7 @@
+import axios from "axios";
 import fs from "fs";
 import path from "path";
-import axios from "axios";
-import crypto from "crypto";
+import crypto, { randomUUID } from "crypto";
 import Bottleneck from "bottleneck";
 import cliProgress from "cli-progress";
 
@@ -12,42 +12,36 @@ import {
   createDirectoryRecursively,
 } from "@utils/helpers/utils";
 
-import type { AxiosInstance, AxiosRequestConfig } from "axios";
+import type { AxiosRequestConfig } from "axios";
 import type { Readable } from "stream";
-import type { DownloadsConfig, GetM3u8Response } from "./types";
+import type { DownloadOptions, DownloadsConfig, DownloadsOptions, GetM3u8Options, GetM3u8Response } from "./types";
 
 export async function startDownload(
-  url: string,
-  axiosOptions: AxiosRequestConfig,
-  fileName: string,
-  downloadOptions: DownloadsConfig
+  downloadOptions: DownloadsConfig,
 ): Promise<void> {
-  let {
-    rootDownloadPath,
-    deleteTemporaryFiles = true,
-    hasKey = false,
-    key,
-    m3u8Path,
-  } = downloadOptions;
-  const folderPath = path.join(rootDownloadPath, fileName);
+  console.log(downloadOptions);
+  if (!downloadOptions.name) {
+    downloadOptions.name = randomUUID();
+  }
+  if (!downloadOptions.rootDownloadPath) {
+    downloadOptions.rootDownloadPath = ".";
+  }
+  const { rootDownloadPath, name, deleteTemporaryFiles, axiosOptions } = downloadOptions;
+  const folderPath = path.join(rootDownloadPath, name);
   createDirectoryRecursively(folderPath);
 
-  const { ts, keyUrl } = await getM3u8(url, axiosOptions, hasKey, m3u8Path);
+  const { ts, keyUrl } = await getM3u8(downloadOptions);
 
-  if (hasKey && keyUrl) {
-    key = await getKey(keyUrl, axiosOptions);
+  if (downloadOptions.hasKey && keyUrl) {
+    downloadOptions.key = await getKey(keyUrl, axiosOptions);
   }
 
-  await downloads(ts, axiosOptions, {
-    ...downloadOptions,
-    rootDownloadPath: folderPath,
-    key,
-  });
+  await downloads({ ...downloadOptions, urls: ts, rootDownloadPath: folderPath });
 
   await mergeAndTranscodeVideos(
     folderPath,
     rootDownloadPath,
-    `${fileName}.mp4`
+    `${name}.mp4`
   );
 
   if (deleteTemporaryFiles) {
@@ -57,10 +51,12 @@ export async function startDownload(
 
 async function fetchData(
   url: string,
-  axiosInstance: AxiosInstance
+  axiosOptions?: AxiosRequestConfig
 ): Promise<any> {
   try {
-    const response = await axiosInstance.get(url);
+    const response = await axios.get(url, {
+      ...axiosOptions,
+    });
     if (response.status !== 200) {
       throw new Error(`HTTPError: HTTP error while getting data from ${url}`);
     }
@@ -78,21 +74,31 @@ async function fetchData(
 }
 
 async function getM3u8<HasKey extends boolean = true>(
-  url: string,
-  axiosOptions: AxiosRequestConfig,
-  hasKey: HasKey,
-  m3u8Path?: string
+  {
+    url,
+    axiosOptions,
+    hasKey,
+    m3u8Path,
+    m3u8Prefix,
+  }: GetM3u8Options<HasKey>,
 ): Promise<GetM3u8Response<HasKey>> {
-  const axiosInstance = axios.create(axiosOptions);
-  const data = m3u8Path
-    ? fs.readFileSync(m3u8Path).toString()
-    : ((await fetchData(url, axiosInstance)) as string | undefined);
+  if (!url && !m3u8Path) {
+    throw new Error("No url or m3u8Path provided");
+  }
+
+  // If url is provided, fetch the data from the url
+  const data: string | undefined = url
+    ? await fetchData(url, axiosOptions)
+    : m3u8Path
+      ? fs.readFileSync(m3u8Path).toString()
+      : undefined;
 
   if (!data) {
     throw new Error(`HTTPError: No data found in ${url}`);
   }
 
-  const head = url.substring(0, url.lastIndexOf("/"));
+  // Get the head of the url
+  const head = url ? url.substring(0, url.lastIndexOf("/")) : m3u8Prefix ? m3u8Prefix : "";
   const ts = data.match(/(https:\/\/)?[^ \n]+\.ts[^ \n]*/g);
   if (!ts) {
     throw new Error(`HTTPError: No valid .ts file found in ${url}`);
@@ -106,7 +112,10 @@ async function getM3u8<HasKey extends boolean = true>(
     throw new Error(`HTTPError: No valid key url found in ${url}`);
   }
 
+  // Remove the first element from the array
   ts.splice(0, 1);
+
+  // If the first element does not contain https, prepend the head to the first element
   if (ts && !ts[0].includes("https")) {
     ts.forEach((v, i, arr) => {
       arr[i] = `${head}/${v}`;
@@ -123,28 +132,33 @@ async function getM3u8<HasKey extends boolean = true>(
 
 async function getKey(
   url: string,
-  axiosOptions: AxiosRequestConfig
+  axiosOptions?: AxiosRequestConfig
 ): Promise<Buffer> {
-  const axiosInstance = axios.create({
-    ...axiosOptions,
+  const response = await axios.get(url, {
     responseType: "stream",
+    timeout: 1000 * 5,
+    ...axiosOptions,
   });
-  const response = await axiosInstance.get(url);
   const dataStream = response.data as Readable;
   const key = await streamToBuffer(dataStream);
   if (key.length === 0) {
-    console.error("Key not received.");
     throw new Error("Key not received.");
   }
   return key;
 }
 
 async function downloads(
-  urls: string[],
-  axiosOptions: AxiosRequestConfig,
-  downloadOptions: DownloadsConfig
+  {
+    urls,
+    rootDownloadPath,
+    limit = 1,
+    ...options
+  }: DownloadsOptions
 ) {
-  const { limit, rootDownloadPath } = downloadOptions;
+  if (!urls.length) {
+    throw new Error("No urls provided");
+  }
+
   const progressBar = new cliProgress.SingleBar(
     {},
     cliProgress.Presets.shades_classic
@@ -157,14 +171,15 @@ async function downloads(
 
   const promises = urls.map((url, currentIndex) =>
     limiter.schedule(async () => {
-      const filePath = path.join(rootDownloadPath, `${currentIndex}.ts`);
+      const filePath = path.join(
+        rootDownloadPath ? rootDownloadPath : ".",
+        `${currentIndex}.ts`
+      );
       if (fs.existsSync(filePath)) {
         progressBar.increment();
         return;
       }
-      await download(url, axiosOptions, filePath, {
-        ...downloadOptions,
-      });
+      await download({ ...options, url, filePath });
       progressBar.increment();
     })
   );
@@ -172,23 +187,22 @@ async function downloads(
   await Promise.all(promises).finally(() => progressBar.stop());
 }
 
+
 async function download(
-  url: string,
-  axiosOptions: AxiosRequestConfig,
-  filePath: string,
-  downloadOptions: DownloadsConfig,
-  retries: number = 3
+  { url, filePath,
+    retries = 3,
+    hasKey,
+    key,
+    axiosOptions,
+  }: DownloadOptions,
 ): Promise<void> {
   try {
     if (fs.existsSync(filePath)) return;
-    const { hasKey, key } = downloadOptions;
-    const axiosInstance = axios.create({
+    const response = await axios.get(url, {
       ...axiosOptions,
       responseType: "stream",
       timeout: 1000 * 5,
     });
-
-    const response = await axiosInstance.get(url);
     const file = fs.createWriteStream(filePath);
 
     let transformStream: crypto.Decipher | undefined;
@@ -225,6 +239,6 @@ async function download(
       return;
     }
     console.log(`Retrying download... (${retries} retries left)`);
-    await download(url, axiosOptions, filePath, downloadOptions, retries - 1);
+    await download({ url, filePath, hasKey, key, axiosOptions, retries: retries - 1 });
   }
 }

@@ -2,7 +2,7 @@ import path from "path";
 import { readFile } from "fs/promises";
 import { AxiosRequestConfig } from "axios";
 
-import type { DownloadData, JsonData } from "./types";
+import { DownloadDataKey, type JsonData } from "./types";
 
 export const options: AxiosRequestConfig = {
   headers: {
@@ -27,22 +27,18 @@ export async function getJsonData(): Promise<JsonData> {
   return jsonData;
 }
 
-export function isDownloadData(data: any): data is DownloadData {
-  return (
-    typeof data.url === "string" &&
-    (typeof data.name === "string" || data.name === undefined)
-  );
-}
-
 export function isJsonData(data: any): data is JsonData {
   if (
     Array.isArray(data.downloadData) &&
     typeof data.hasKey === "boolean" &&
     (data.limit === null || typeof data.limit === "number") &&
-    typeof data.rootDownloadPath === "string"
+    typeof data.rootDownloadPath === "string" &&
+    typeof data.deleteTemporaryFiles === "boolean"
   ) {
     for (const item of data.downloadData) {
-      if (!isDownloadData(item)) return false;
+      Object.keys(item).forEach((key) => {
+        if (!DownloadDataKey.includes(key)) return false;
+      });
     }
     return true;
   }

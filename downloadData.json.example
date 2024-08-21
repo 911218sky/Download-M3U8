@@ -1,12 +1,14 @@
 {
   "hasKey": true,
-  "limit": 10,
+  "limit": 15,
   "rootDownloadPath": "./video",
+  "deleteTemporaryFiles": true,
   "downloadData": [
     {
-      "url": ".m3u8",
-      "name": ""
-      "m3u8Path": "選填"
+      "url": "選填和URL二選一(優先使用URL) ex: https://www.example.com/video.m3u8",
+      "name": "選填",
+      "m3u8Path": "選填和URL二選一(優先使用URL) ex: ./video.m3u8",
+      "m3u8Prefix": "選填(如果填選URL會優先使用URL前綴，填選m3u8Path則有效會自動加上填選的前綴)"
     }
   ]
 }
