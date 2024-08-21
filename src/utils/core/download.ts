@@ -19,7 +19,7 @@ import type { DownloadOptions, DownloadsConfig, DownloadsOptions, GetM3u8Options
 export async function startDownload(
   downloadOptions: DownloadsConfig,
 ): Promise<void> {
-  console.log(downloadOptions);
+  console.log(`[INFO] [CONFIG] ${JSON.stringify(downloadOptions, null, 2)}`);
   if (!downloadOptions.name) {
     downloadOptions.name = randomUUID();
   }
@@ -159,10 +159,20 @@ async function downloads(
     throw new Error("No urls provided");
   }
 
-  const progressBar = new cliProgress.SingleBar(
-    {},
-    cliProgress.Presets.shades_classic
-  );
+  const originalLength = urls.length;
+  // filter out the files that have already been downloaded
+  urls = urls.filter((url) => !fs.existsSync(path.join(rootDownloadPath ? rootDownloadPath : ".", `${urls.indexOf(url)}.ts`)));
+
+  const progressBar = new cliProgress.SingleBar({
+    format: 'Progress [{bar}] {percentage}% | ETA: {eta}s | {value}/{total}',
+    barCompleteChar: '\u2588',
+    barIncompleteChar: '\u2591',
+    hideCursor: true,
+    stopOnComplete: true,
+    clearOnComplete: true,
+    fps: 5
+  }, cliProgress.Presets.shades_classic);
+
   progressBar.start(urls.length, 0);
 
   const limiter = new Bottleneck({
@@ -173,7 +183,7 @@ async function downloads(
     limiter.schedule(async () => {
       const filePath = path.join(
         rootDownloadPath ? rootDownloadPath : ".",
-        `${currentIndex}.ts`
+        `${(originalLength - urls.length) + currentIndex}.ts`
       );
       if (fs.existsSync(filePath)) {
         progressBar.increment();

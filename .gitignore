@@ -1,5 +1,5 @@
 /downloadData.json
 /node_modules
-/video
+/video/**
 /*.m3u8
 .vscode
