@@ -8,11 +8,10 @@
   },
   "downloadData": [
     {
-      "url": "選填和URL二選一(優先使用URL) ex: https://www.example.com/video.m3u8",
-      "name": "選填",
-      "m3u8Path": "選填和URL二選一(優先使用URL) ex: ./video.m3u8",
-      "m3u8Prefix": "選填(如果填選URL會優先使用URL前綴，填選m3u8Path則有效會自動加上填選的前綴)"
+      "url": "Optional, choose either this or the URL (URL takes priority) ex: https://www.example.com/video.m3u8",
+      "name": "Optional",
+      "m3u8Path": "Optional, choose either this or the URL (URL takes priority) ex: ./video.m3u8",
+      "m3u8Prefix": "Optional (If you fill in the URL, it will prioritize the URL prefix; if you fill in m3u8Path, it will automatically add the specified prefix)"
     }
   ]
 }
-
