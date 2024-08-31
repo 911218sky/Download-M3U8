@@ -11,6 +11,7 @@ export interface JsonData {
   limit: number | null;
   rootDownloadPath: string;
   deleteTemporaryFiles: boolean;
+  headers?: Record<string, string>;
 }
 
 export const DownloadDataKey = ["url", "name", "m3u8Path", "m3u8Prefix"];

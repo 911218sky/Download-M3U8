@@ -13,7 +13,7 @@ const scriptPath = `./src/scripts/download-manager/${scriptName}`;
 
 try {
   execSync(`ts-node ${scriptPath}`, { stdio: 'inherit' });
-  console.log('Script executed successfully.');
+  console.log('Script is done.');
 } catch (error) {
   console.error('Script execution failed.');
   process.exit(1);

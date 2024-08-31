@@ -1,8 +1,11 @@
 {
-  "hasKey": true,
+  "hasKey": false,
+  "deleteTemporaryFiles": true,
   "limit": 15,
   "rootDownloadPath": "./video",
-  "deleteTemporaryFiles": true,
+  "headers": {
+    
+  },
   "downloadData": [
     {
       "url": "選填和URL二選一(優先使用URL) ex: https://www.example.com/video.m3u8",
@@ -12,3 +15,4 @@
     }
   ]
 }
+

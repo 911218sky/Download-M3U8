@@ -7,10 +7,12 @@
     "path": "^0.12.7",
     "progress": "^2.0.3",
     "stream": "^0.0.2",
-    "url": "^0.11.3"
+    "url": "^0.11.3",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@types/progress": "^2.0.5",
+    "@types/uuid": "^10.0.0",
     "tsconfig-paths": "^4.2.0"
   }
 }

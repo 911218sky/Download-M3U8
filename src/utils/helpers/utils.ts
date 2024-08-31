@@ -2,6 +2,7 @@ import { exec } from 'child_process';
 import fs from "fs";
 import path from "path";
 import { promisify } from 'util';
+import { v4 as uuidv4 } from 'uuid';
 
 import type { Readable } from "stream";
 
@@ -40,10 +41,9 @@ export function deleteFolderRecursive(directoryPath: string): void {
   }
 }
 
-export function createDirectoryRecursively(directoryPath: string): void {
+export function createDirectoryRecursively(directoryPath: string): boolean {
   if (fs.existsSync(directoryPath)) {
-    console.log(`Directory already exists: ${directoryPath}`);
-    return;
+    return false;
   }
 
   const parentDirectory = path.dirname(directoryPath);
@@ -52,7 +52,7 @@ export function createDirectoryRecursively(directoryPath: string): void {
   }
 
   fs.mkdirSync(directoryPath);
-  console.log(`Directory created: ${directoryPath}`);
+  return true;
 }
 
 export async function mergeAndTranscodeVideos(
@@ -60,18 +60,22 @@ export async function mergeAndTranscodeVideos(
   outputDir: string,
   fileName: string
 ): Promise<void> {
-  // Temporarily rename the input folder to ensure that the input folder name does not have Chinese characters
+  const uniqueId = uuidv4();
   const originalInputDir = inputDir;
-  const newInputDir = path.join(path.dirname(inputDir), "input");
+  const newInputDir = path.join(path.dirname(inputDir), uniqueId);
+
+  // Rename the inputDir to avoid issues with Chinese characters
   fs.renameSync(inputDir, newInputDir);
   inputDir = newInputDir;
 
-  if (!path.isAbsolute(inputDir)) {
-    inputDir = path.resolve(inputDir);
+  inputDir = path.isAbsolute(inputDir) ? inputDir : path.resolve(inputDir);
+  outputDir = path.isAbsolute(outputDir) ? outputDir : path.resolve(outputDir);
+
+  // Ensure output directory exists
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
   }
-  if (!path.isAbsolute(outputDir)) {
-    outputDir = path.resolve(outputDir);
-  }
+
   const inputFiles = fs
     .readdirSync(inputDir)
     .filter((filename) => filename.endsWith(".ts"))
@@ -96,20 +100,19 @@ export async function mergeAndTranscodeVideos(
   fs.writeFileSync(concatListFile, concatList);
 
   try {
-    await (async () => {
-      const ffmpegCommand = `ffmpeg -f concat -safe 0 -i "${concatListFile}" -c:v h264_nvenc -c copy -bsf:a aac_adtstoasc "${path.join(outputDir, fileName)}"`;
-      const { stdout, stderr } = await execPromise(ffmpegCommand);
-      if (stderr) {
-        console.error("FFmpeg stderr:", stderr);
-      }
-      console.log("FFmpeg process finished!");
-      console.log("FFmpeg stdout:", stdout);
-    })();
+    const ffmpegCommand = `ffmpeg -f concat -safe 0 -i "${concatListFile}" -c:v h264_nvenc -c:a aac -b:a 128k "${path.join(outputDir, fileName)}"`;
+    const { stdout, stderr } = await execPromise(ffmpegCommand);
+
+    if (stderr) {
+      console.error("FFmpeg stderr:", stderr);
+    }
+    console.log("FFmpeg process finished!");
+    console.log("FFmpeg stdout:", stdout);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.log(`${error.message}`);
+      console.error(`Error during merging videos: ${error.message}`);
     } else {
-      console.log(`Error merge videos : Unknown error`);
+      console.error('Error during merging videos: Unknown error');
     }
   } finally {
     fs.unlinkSync(concatListFile);

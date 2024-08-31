@@ -28,7 +28,14 @@ export async function startDownload(
   }
   const { rootDownloadPath, name, deleteTemporaryFiles, axiosOptions } = downloadOptions;
   const folderPath = path.join(rootDownloadPath, name);
-  createDirectoryRecursively(folderPath);
+  const fileName = `${name}.mp4`;
+
+  if (fs.existsSync(path.join(rootDownloadPath, fileName)) || !createDirectoryRecursively(folderPath)) {
+    console.error(`Directory already exists: ${folderPath} or ${path.join(rootDownloadPath, fileName)}`);
+    return;
+  } else {
+    console.log(`Directory created: ${folderPath}`);
+  }
 
   const { ts, keyUrl } = await getM3u8(downloadOptions);
 
@@ -41,7 +48,7 @@ export async function startDownload(
   await mergeAndTranscodeVideos(
     folderPath,
     rootDownloadPath,
-    `${name}.mp4`
+    fileName
   );
 
   if (deleteTemporaryFiles) {
@@ -207,10 +214,14 @@ async function download(
   }: DownloadOptions,
 ): Promise<void> {
   try {
-    if (fs.existsSync(filePath)) return;
+    if (fs.existsSync(filePath)) {
+      console.log(`File already exists: ${filePath}`);
+      return;
+    }
     const response = await axios.get(url, {
       ...axiosOptions,
       responseType: "stream",
+      // 5 seconds timeout
       timeout: 1000 * 5,
     });
     const file = fs.createWriteStream(filePath);
@@ -224,6 +235,7 @@ async function download(
         Buffer.alloc(16, 0)
       );
     }
+
     const outputStream = transformStream
       ? response.data.pipe(transformStream)
       : response.data;
@@ -235,8 +247,9 @@ async function download(
         file.close();
         resolve(true);
       });
-      file.on("error", (err) => {
-        reject(err);
+      file.on("error", () => {
+        file.close();
+        reject("ECONNRESET");
       });
     });
   } catch (error: unknown) {
@@ -244,7 +257,7 @@ async function download(
       console.log(`Error downloading from ${url}: Unknown error`);
       return;
     }
-    if (!error.message.includes("timeout") && retries > 0) {
+    if (!error.message.includes("timeout") && error.message.includes("ECONNRESET") && retries <= 0) {
       console.log(`Error downloading from ${url}: ${error.message}`);
       return;
     }
