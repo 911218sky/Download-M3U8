@@ -92,7 +92,7 @@ export async function mergeAndTranscodeVideos(
       }
       return null;
     })
-    .filter((fileEntry) => fileEntry !== null)
+    .filter((fileEntry): fileEntry is string => fileEntry !== null)
     .join("\n");
 
   const concatListFile = path.join(inputDir, "m3u8.txt");
@@ -108,7 +108,7 @@ export async function mergeAndTranscodeVideos(
     }
     console.log("FFmpeg process finished!");
     console.log("FFmpeg stdout:", stdout);
-  } catch (error: unknown) {
+  } catch (error) {
     if (error instanceof Error) {
       console.error(`Error during merging videos: ${error.message}`);
     } else {

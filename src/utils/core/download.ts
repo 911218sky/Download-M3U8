@@ -29,29 +29,47 @@ export async function startDownload(
   const { rootDownloadPath, name, deleteTemporaryFiles, axiosOptions } = downloadOptions;
   const folderPath = path.join(rootDownloadPath, name);
   const fileName = `${name}.mp4`;
+  const isExistFile = fs.existsSync(path.join(rootDownloadPath, fileName));
+  const isOriginalExistFolder = fs.existsSync(folderPath);
 
-  if (fs.existsSync(path.join(rootDownloadPath, fileName)) || !createDirectoryRecursively(folderPath)) {
-    console.error(`Directory already exists: ${folderPath} or ${path.join(rootDownloadPath, fileName)}`);
+  if (isExistFile) {
+    console.log(`[INFO] [EXIST] File already exists: ${path.join(rootDownloadPath, fileName)}`);
     return;
-  } else {
-    console.log(`Directory created: ${folderPath}`);
   }
 
-  const { ts, keyUrl } = await getM3u8(downloadOptions);
-
-  if (downloadOptions.hasKey && keyUrl) {
-    downloadOptions.key = await getKey(keyUrl, axiosOptions);
+  if (!isOriginalExistFolder) {
+    console.log(`[INFO] [CREATE] Creating directory...`);
+    if (!createDirectoryRecursively(folderPath)) {
+      console.error(`[ERROR] [CREATE] Failed to create directory: ${folderPath}`);
+      return;
+    } else {
+      console.log(`[INFO] [CREATE] Directory created: ${folderPath}`);
+    }
   }
 
-  await downloads({ ...downloadOptions, urls: ts, rootDownloadPath: folderPath });
+  // Download the video
+  if (!isOriginalExistFolder) {
+    console.log(`[INFO] [GETTING M3U8] Getting m3u8...`);
+    const { ts, keyUrl } = await getM3u8(downloadOptions);
 
+    if (downloadOptions.hasKey && keyUrl) {
+      console.log(`[INFO] [GETTING KEY] Getting key...`);
+      downloadOptions.key = await getKey(keyUrl, axiosOptions);
+    }
+
+    console.log(`[INFO] [DOWNLOAD] Downloading videos...`);
+    await downloads({ ...downloadOptions, urls: ts, rootDownloadPath: folderPath });
+  }
+
+  console.log(`[INFO] [MERGE] Merging videos...`);
   await mergeAndTranscodeVideos(
     folderPath,
     rootDownloadPath,
     fileName
   );
 
-  if (deleteTemporaryFiles) {
+  if (deleteTemporaryFiles && !isOriginalExistFolder) {
+    console.log(`[INFO] [DELETE] Deleting temporary files...`);
     deleteFolderRecursive(folderPath);
   }
 }
@@ -257,10 +275,11 @@ async function download(
       console.log(`Error downloading from ${url}: Unknown error`);
       return;
     }
-    if (!error.message.includes("timeout") && error.message.includes("ECONNRESET") && retries <= 0) {
+    if (!error.message.includes("timeout") && error.message.includes("ECONNRESET") || retries <= 0) {
       console.log(`Error downloading from ${url}: ${error.message}`);
       return;
     }
+    console.log(`Error downloading from ${url}: ${error.message}`);
     console.log(`Retrying download... (${retries} retries left)`);
     await download({ url, filePath, hasKey, key, axiosOptions, retries: retries - 1 });
   }
