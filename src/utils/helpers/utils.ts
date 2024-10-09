@@ -64,7 +64,7 @@ export async function mergeAndTranscodeVideos(
   const originalInputDir = inputDir;
   const newInputDir = path.join(path.dirname(inputDir), uniqueId);
 
-  // Rename the inputDir to avoid issues with Chinese characters
+  // Rename input directory to avoid issues with Chinese characters
   fs.renameSync(inputDir, newInputDir);
   inputDir = newInputDir;
 
@@ -100,19 +100,26 @@ export async function mergeAndTranscodeVideos(
   fs.writeFileSync(concatListFile, concatList);
 
   try {
-    const ffmpegCommand = `ffmpeg -f concat -safe 0 -i "${concatListFile}" -c:v h264_nvenc -c:a aac -b:a 128k "${path.join(outputDir, fileName)}"`;
+    // Optimized FFmpeg command for faster processing
+    // FFmpeg command explanations:
+    // -f concat: Use the concat demuxer to read input from a list of files
+    // -safe 0: Disable safe mode, allowing absolute paths in the concat file
+    // -i "${concatListFile}": Input file containing the list of video segments to concatenate
+    // -c copy: Directly copy video and audio streams without re-encoding
+    // -threads 0: Allow FFmpeg to automatically determine the number of threads to use
+    const ffmpegCommand = `ffmpeg -f concat -safe 0 -i "${concatListFile}" -c copy -threads 0 "${path.join(outputDir, fileName)}"`;
     const { stdout, stderr } = await execPromise(ffmpegCommand);
 
     if (stderr) {
       console.error("FFmpeg stderr:", stderr);
     }
-    console.log("FFmpeg process finished!");
+    console.log("FFmpeg process completed!");
     console.log("FFmpeg stdout:", stdout);
   } catch (error) {
     if (error instanceof Error) {
-      console.error(`Error during merging videos: ${error.message}`);
+      console.error(`Error during video merging: ${error.message}`);
     } else {
-      console.error('Error during merging videos: Unknown error');
+      console.error('Unknown error during video merging');
     }
   } finally {
     fs.unlinkSync(concatListFile);
